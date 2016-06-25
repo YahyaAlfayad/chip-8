@@ -1,20 +1,36 @@
 package cpu;
 
+import org.hamcrest.core.Is;
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
+
+import static org.hamcrest.core.Is.is;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 
 /**
  * Created by kinder112 on 25.06.2016.
  */
 public class Chip8Test {
 
-    // This test manual test check console output
+    private Chip8 cpu;
+
+    @Before
+    public void setUp() throws Exception {
+        cpu = new Chip8();
+    }
+
+    // This is manual test check if console output contains default fonts -> 0-9, A-F
+    @Ignore
     @Test
     public void Test_fonts_are_placed_correctly_in_memory() throws Exception {
         Chip8 chip8 = new Chip8();
         int currentHeight = 1;
         for (byte b : chip8.memory) {
             System.out.println(convertByteToStarsAndSpaces(b));
-            if(currentHeight++ % Chip8.FONT_HEIGHT == 0){
+            if (currentHeight++ % Chip8.FONT_HEIGHT == 0) {
                 System.out.println();
                 System.out.println();
             }
@@ -24,17 +40,42 @@ public class Chip8Test {
 
     private String convertByteToStarsAndSpaces(byte b) {
         //Only high nibble (4 bytes) are used to represent font
-        return Integer.toBinaryString((b >>> 4) & 0xF | 0x100 )
+        return Integer.toBinaryString((b >> 4) & 0xF | 0x100)
                 .substring(5).replace('1', '*').replace('0', ' ');
     }
 
-    //  0NNN  Calls RCA 1802 program at address NNN. Not necessary for most ROMs.
+    // 0NNN  Calls RCA 1802 program at address NNN. Not necessary for most ROMs.
+    @Test(expected = UnsupportedOperationException.class)
+    public void shouldThrowUnsupportedOperationExceptionOn_0NNN() throws Exception {
+        cpu.handleOpcode((short) 0x0EEE);
+    }
+
+    // 00E0	Clears the screen.
     @Test
-    public void name() throws Exception {
+    public void shouldSetClearScreenFlagOn_00E0() throws Exception {
+        // When
+        cpu.handleOpcode((short) 0x00E0);
+
+        // Then
+        assertTrue(cpu.clearScreen);
+    }
+
+    // 00EE	Returns from a subroutine.
+    @Test
+    public void shouldDecreaseStackPointerAndSetProgramCounterToPreviousAddressOn_00EE() throws Exception {
+        //Given
+        final int previousFrameAddress = 0xABCD;
+        cpu.stack[cpu.stackPointer++] = (short) previousFrameAddress;
+        //When
+        cpu.handleOpcode((short) 0x00EE);
+        //Then
+        assertThat(cpu.stackPointer, is((byte) 0));
+        assertThat(cpu.programCounter, is((short) previousFrameAddress));
+
 
     }
-//    00E0	Clears the screen.
-//    00EE	Returns from a subroutine.
+
+
 //    1NNN	Jumps to address NNN.
 //    2NNN	Calls subroutine at NNN.
 //    3XNN	Skips the next instruction if VX equals NN.

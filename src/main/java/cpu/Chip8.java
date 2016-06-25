@@ -39,6 +39,8 @@ public class Chip8 {
     byte soundTimer;
     byte stackPointer;
     short stack[] = new short[16];
+    boolean clearScreen;
+    Opcodes opcodes = new Opcodes(this);
 
 
     {
@@ -50,4 +52,7 @@ public class Chip8 {
         System.out.println(Arrays.toString(chip.memory));
     }
 
+    public void handleOpcode(short opcode) {
+        opcodes.handleOpcode(opcode);
+    }
 }
