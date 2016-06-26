@@ -47,11 +47,6 @@ public class Chip8 {
         System.arraycopy(FONTS, 0, memory, 0, FONTS_NUMBER * FONT_HEIGHT);
     }
 
-    public static void main(String[] args) {
-        Chip8 chip = new Chip8();
-        System.out.println(Arrays.toString(chip.memory));
-    }
-
     public void handleOpcode(short opcode) {
         opcodes.handleOpcode(opcode);
     }

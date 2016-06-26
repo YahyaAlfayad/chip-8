@@ -1,7 +1,5 @@
 package cpu;
 
-import org.hamcrest.core.Is;
-import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -75,8 +73,17 @@ public class Chip8Test {
 
     }
 
+    // 1NNN	Jumps to address NNN.
+    @Test
+    public void shouldJumpToAddressNNNOn_1NNN() throws Exception {
+        //Given
+        final int opCodeWithJumpAddress = 0x1BAB;
+        //When
+        cpu.handleOpcode((short) opCodeWithJumpAddress);
+        //Then
+        assertThat(cpu.programCounter, is((short) 0xBAB));
+    }
 
-//    1NNN	Jumps to address NNN.
 //    2NNN	Calls subroutine at NNN.
 //    3XNN	Skips the next instruction if VX equals NN.
 //    4XNN	Skips the next instruction if VX doesn't equal NN.

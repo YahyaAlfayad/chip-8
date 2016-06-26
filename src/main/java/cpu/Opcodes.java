@@ -34,7 +34,6 @@ public class Opcodes {
                     // The interpreter sets the program counter to the address at the top of the stack, then subtracts 1 from the stack pointer.
                     case 0x00EE:
                         cpu.programCounter = cpu.stack[--cpu.stackPointer];
-                        cpu.programCounter+=2;
                         break;
                     // 0nnn - SYS addr
                     // Jump to a machine code routine at nnn.
@@ -42,7 +41,13 @@ public class Opcodes {
                     default:
                         throw new UnsupportedOperationException("0NNN is unsupported on this interpreter");
                 }
-
+                break;
+            // 1nnn - JP addr
+            // Jump to location nnn.
+            // The interpreter sets the program counter to nnn.
+            case 0x1000:
+                cpu.programCounter = (short) (opcode & 0x0FFF);
+                break;
         }
     }
 }
