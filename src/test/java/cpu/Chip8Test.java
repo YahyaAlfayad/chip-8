@@ -84,11 +84,89 @@ public class Chip8Test {
         assertThat(cpu.programCounter, is((short) 0xBAB));
     }
 
-//    2NNN	Calls subroutine at NNN.
-//    3XNN	Skips the next instruction if VX equals NN.
-//    4XNN	Skips the next instruction if VX doesn't equal NN.
-//    5XY0	Skips the next instruction if VX equals VY.
-//    6XNN	Sets VX to NN.
+    // 2NNN	Calls subroutine at NNN.
+    @Test
+    public void shouldCallSubroutineAtNNNOn_2NNN() throws Exception {
+        //Given
+        int opCodeWithJumpAddress = 0x2BAC;
+        int previousStackPointer = 5;
+        final int previousPC = 0x0CDE;
+        //When
+        cpu.stackPointer = (byte) previousStackPointer;
+        cpu.programCounter = (short) previousPC;
+        cpu.handleOpcode((short) opCodeWithJumpAddress);
+        //Then
+        assertThat(cpu.stackPointer, is(++previousStackPointer));
+        assertThat(cpu.stack[cpu.stackPointer-1], is(previousPC));
+        assertThat(cpu.programCounter, is(opCodeWithJumpAddress & 0x0FFF));
+    }
+
+    // 3XNN	Skips the next instruction if VX equals NN.
+    @Test
+    public void shouldSkipNextInstructionOn_3XNN() throws Exception {
+        //Given
+        final int instruction = 0x37CA;
+        final int vX = 0xCA;
+        final int x = 7;
+        int pc = 0x5;
+        //When
+        cpu.programCounter = (short) pc;
+        cpu.registers[x] = (byte) vX;
+        cpu.handleOpcode((short) instruction);
+        //Then
+        assertThat(cpu.programCounter, is(pc + 2));
+    }
+
+    // 3XNN	Skips the next instruction if VX equals NN.
+    @Test
+    public void shouldNotSkipNextInstructionOn_3XNN() throws Exception {
+        //Given
+        final int instruction = 0x37CA;
+        final int vX = 0xCB;
+        final int x = 7;
+        int pc = 0x5;
+        //When
+        cpu.programCounter = (short) pc;
+        cpu.registers[x] = (byte) vX;
+        cpu.handleOpcode((short) instruction);
+        //Then
+        assertThat(cpu.programCounter, is(pc + 1));
+    }
+
+    // 4XNN	Skips the next instruction if VX doesn't equal NN.
+    @Test
+    public void shouldSkipNextInstructionOn_4XNN() throws Exception {
+        //Given
+        final int instruction = 0x47CA;
+        final int vX = 0xCF;
+        final int x = 7;
+        int pc = 0x5;
+        //When
+        cpu.programCounter = (short) pc;
+        cpu.registers[x] = (byte) vX;
+        cpu.handleOpcode((short) instruction);
+        //Then
+        assertThat(cpu.programCounter, is(pc + 2));
+    }
+
+    // 4XNN	Skips the next instruction if VX equals NN.
+    @Test
+    public void shouldNotSkipNextInstructionOn_4XNN() throws Exception {
+        //Given
+        final int instruction = 0x47CA;
+        final int vX = 0xCA;
+        final int x = 7;
+        int pc = 0x5;
+        //When
+        cpu.programCounter = (short) pc;
+        cpu.registers[x] = (byte) vX;
+        cpu.handleOpcode((short) instruction);
+        //Then
+        assertThat(cpu.programCounter, is(pc + 1));
+    }
+    // 5XY0	Skips the next instruction if VX equals VY.
+
+    // 6XNN	Sets VX to NN.
 //    7XNN	Adds NN to VX.
 //    8XY0	Sets VX to the value of VY.
 //    8XY1	Sets VX to VX or VY.
