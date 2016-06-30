@@ -1,7 +1,5 @@
 package cpu;
 
-import java.util.Arrays;
-
 /**
  * Created by kinder112 on 25.06.2016.
  */
