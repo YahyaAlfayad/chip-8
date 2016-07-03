@@ -1,7 +1,5 @@
 package cpu;
 
-import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import static org.hamcrest.core.Is.is;
@@ -11,36 +9,7 @@ import static org.junit.Assert.assertTrue;
 /**
  * Created by kinder112 on 25.06.2016.
  */
-public class Chip8Test {
-
-    private Chip8 cpu;
-
-    @Before
-    public void setUp() throws Exception {
-        cpu = new Chip8();
-    }
-
-    // This is manual test check if console output contains default fonts -> 0-9, A-F
-    @Ignore
-    @Test
-    public void Test_fonts_are_placed_correctly_in_memory() throws Exception {
-        Chip8 chip8 = new Chip8();
-        int currentHeight = 1;
-        for (byte b : chip8.memory) {
-            System.out.println(convertByteToStarsAndSpaces(b));
-            if (currentHeight++ % Chip8.FONT_HEIGHT == 0) {
-                System.out.println();
-                System.out.println();
-            }
-        }
-
-    }
-
-    private String convertByteToStarsAndSpaces(byte b) {
-        //Only high nibble (4 bytes) are used to represent font
-        return Integer.toBinaryString((b >> 4) & 0xF | 0x100)
-                .substring(5).replace('1', '*').replace('0', ' ');
-    }
+public class Chip8Test extends Chip8TestBase {
 
     // 0NNN  Calls RCA 1802 program at address NNN. Not necessary for most ROMs.
     @Test(expected = UnsupportedOperationException.class)
@@ -62,13 +31,14 @@ public class Chip8Test {
     @Test
     public void shouldDecreaseStackPointerAndSetProgramCounterToPreviousAddressOn_00EE() throws Exception {
         //Given
-        final int previousFrameAddress = 0xABCD;
-        cpu.stack[cpu.stackPointer++] = (short) previousFrameAddress;
+        final short previousFrameAddress = 0x7BCD;
+        final byte expectedStackPointer = 0;
+        cpu.stack[cpu.stackPointer++] = previousFrameAddress;
         //When
         cpu.handleOpcode((short) 0x00EE);
         //Then
-        assertThat(cpu.stackPointer, is((byte) 0));
-        assertThat(cpu.programCounter, is((short) previousFrameAddress));
+        assertThatStackPointerIs(expectedStackPointer);
+        assertThatProgramCounterIs(previousFrameAddress);
 
 
     }
@@ -77,133 +47,133 @@ public class Chip8Test {
     @Test
     public void shouldJumpToAddressNNNOn_1NNN() throws Exception {
         //Given
-        final int opCodeWithJumpAddress = 0x1BAB;
+        final short opCodeWithJumpAddress = 0x1BAB;
         //When
-        cpu.handleOpcode((short) opCodeWithJumpAddress);
+        cpu.handleOpcode(opCodeWithJumpAddress);
         //Then
-        assertThat(cpu.programCounter, is((short) 0xBAB));
+        assertThatProgramCounterIs(0xBAB);
     }
 
     // 2NNN	Calls subroutine at NNN.
     @Test
     public void shouldCallSubroutineAtNNNOn_2NNN() throws Exception {
         //Given
-        int opCodeWithJumpAddress = 0x2BAC;
-        int previousStackPointer = 5;
-        int previousPC = 0x0CDE;
+        short opCodeWithJumpAddress = 0x2BAC;
+        byte previousStackPointer = 5;
+        short previousPC = 0x0CDE;
 
-        cpu.stackPointer = (byte) previousStackPointer;
-        cpu.programCounter = (short) previousPC;
+        cpu.stackPointer = previousStackPointer;
+        cpu.programCounter = previousPC;
         //When
-        cpu.handleOpcode((short) opCodeWithJumpAddress);
+        cpu.handleOpcode(opCodeWithJumpAddress);
         //Then
-        assertThat(cpu.stackPointer, is((byte) ++previousStackPointer));
-        assertThat(cpu.stack[cpu.stackPointer-1], is((short) (++previousPC)));
-        assertThat(cpu.programCounter, is( (short) (opCodeWithJumpAddress & 0x0FFF)));
+        assertThatStackPointerIs(++previousStackPointer);
+        assertThatTopStackIs(previousPC + 1);
+        assertThatProgramCounterIs(opCodeWithJumpAddress);
     }
 
     // 3XNN	Skips the next instruction if VX equals NN.
     @Test
     public void shouldSkipNextInstructionOn_3XNN() throws Exception {
         //Given
-        final int instruction = 0x37CA;
-        final int vX = 0xCA;
-        final int x = 7;
-        int pc = 0x5;
+        final short opCode = 0x377A;
+        final byte vX = 0x7A;
+        final byte x = 7;
+        short pc = 0x5;
 
-        cpu.programCounter = (short) pc;
-        cpu.registers[x] = (byte) vX;
+        cpu.programCounter = pc;
+        cpu.registers[x] = vX;
         //When
-        cpu.handleOpcode((short) instruction);
+        cpu.handleOpcode(opCode);
         //Then
-        assertThat(cpu.programCounter, is(pc + 2));
+        assertThatProgramCounterIs(pc + 2);
     }
 
     // 3XNN	Skips the next instruction if VX equals NN.
     @Test
     public void shouldNotSkipNextInstructionOn_3XNN() throws Exception {
         //Given
-        final int instruction = 0x37CA;
-        final int vX = 0xCB;
-        final int x = 7;
-        int pc = 0x5;
+        final short instruction = 0x37CA;
+        final byte vX = (byte) (0xCB & 0xFF);
+        final byte x = 7;
+        short pc = 0x5;
 
-        cpu.programCounter = (short) pc;
-        cpu.registers[x] = (byte) vX;
+        cpu.programCounter = pc;
+        cpu.registers[x] = vX;
         //When
-        cpu.handleOpcode((short) instruction);
+        cpu.handleOpcode(instruction);
         //Then
-        assertThat(cpu.programCounter, is(pc + 1));
+        assertThatProgramCounterIs(pc + 1);
     }
 
     // 4XNN	Skips the next instruction if VX doesn't equal NN.
     @Test
     public void shouldSkipNextInstructionOn_4XNN() throws Exception {
         //Given
-        final int instruction = 0x47CA;
-        final int vX = 0xCF;
-        final int x = 7;
-        int pc = 0x5;
+        final short instruction = 0x47CA;
+        final byte vX = (byte) 0xCF;
+        final byte x = 0x7;
+        short pc = 0x5;
 
-        cpu.programCounter = (short) pc;
-        cpu.registers[x] = (byte) vX;
+        cpu.programCounter = pc;
+        cpu.registers[x] = vX;
         //When
-        cpu.handleOpcode((short) instruction);
+        cpu.handleOpcode(instruction);
         //Then
-        assertThat(cpu.programCounter, is(pc + 2));
+        assertThatProgramCounterIs(pc + 2);
     }
 
     // 4XNN	Skips the next instruction if VX equals NN.
     @Test
     public void shouldNotSkipNextInstructionOn_4XNN() throws Exception {
         //Given
-        final int instruction = 0x47CA;
-        final int vX = 0xCA;
-        final int x = 7;
-        int pc = 0x5;
+        final short instruction = 0x47CA;
+        final byte vX = (byte) 0xCA;
+        final byte x = 0x7;
+        short pc = 0x5;
 
-        cpu.programCounter = (short) pc;
-        cpu.registers[x] = (byte) vX;
+        cpu.programCounter = pc;
+        cpu.registers[x] = vX;
         //When
-        cpu.handleOpcode((short) instruction);
+        cpu.handleOpcode(instruction);
         //Then
-        assertThat(cpu.programCounter, is(pc + 1));
+        assertThatProgramCounterIs(pc + 1);
     }
-    // 5XY0	Skips the next instruction if VX equals VY.
 
+    // 5XY0	Skips the next instruction if VX equals VY.
     @Test
     public void shouldSkipNextInstructionOn_5XY0() throws Exception {
         //Given
-        final int instruction = 0x5480;
-        final int x = 4;
-        final int y = 8;
-        final int value = 0xBABE;
-        final int pc = 0xAFFF;
+        final short instruction = 0x5480;
+        final byte x = 0x4;
+        final byte y = 0x8;
+        final byte value = 0x7C;
+        final short pc = 0x10;
 
-        cpu.registers[x] = (byte) value;
-        cpu.registers[y] = (byte) value;
-        cpu.programCounter = (short) pc;
+        cpu.registers[x] = value;
+        cpu.registers[y] = value;
+        cpu.programCounter = pc;
         //When
-        cpu.handleOpcode((short) instruction);
+        cpu.handleOpcode(instruction);
         //Then
-        assertThat(cpu.programCounter, is(pc + 2));
+        assertThatProgramCounterIs(pc + 2);
     }
 
     @Test
     public void shouldNotSkipNextInstructionOn_5XY0() throws Exception {
         //Given
-        final int instruction = 0x5480;
-        final int x = 4;
-        final int y = 8;
-        final int vX = 0xBABE;
-        final int vY = 0xBABA;
-        final int pc = 0xAFFF;
+        final short opCode = 0x5480;
+        final int x = 0x4;
+        final int y = 0x8;
+        final byte vX = 0xE;
+        final byte vY = 0xA;
+        final short pc = 0xAFF;
 
-        cpu.registers[x] = (byte) vX;
-        cpu.registers[y] = (byte) vY;
-        cpu.programCounter = (short) pc;
+        cpu.registers[x] = vX;
+        cpu.registers[y] = vY;
+        cpu.programCounter = pc;
         //When
-        cpu.handleOpcode((short) instruction);
+        cpu.handleOpcode(opCode);
         //Then
         assertThat(cpu.programCounter, is(pc + 1));
     }
@@ -236,4 +206,5 @@ public class Chip8Test {
     // FX33	Stores the binary-coded decimal representation of VX, with the most significant of three digits at the address in I, the middle digit at I plus 1, and the least significant digit at I plus 2. (In other words, take the decimal representation of VX, place the hundreds digit in memory at location in I, the tens digit at location I+1, and the ones digit at location I+2.)
     // FX55	Stores V0 to VX (including VX) in memory starting at address I.[4]
     // FX65	Fills V0 to VX (including VX) with values from memory starting at address I.[4]
+
 }
